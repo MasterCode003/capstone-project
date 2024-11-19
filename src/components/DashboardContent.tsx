@@ -21,8 +21,6 @@ const DashboardContent: React.FC = () => {
     editorsCount,
     firstHalfSubmissions,
     secondHalfSubmissions,
-    internalSubmissions,
-    externalSubmissions,
   } = useDashboard();
 
   const cardData = {
@@ -55,23 +53,30 @@ const DashboardContent: React.FC = () => {
 
   const getChartData = () => {
     // Review Status Distribution data
-    const reviewStatusData = [
+    const reviewStatusData = isDirectorDashboard ? [
+      { name: 'Pre-Review', value: preReviewCount },
+      { name: 'Double-Blind', value: doubleBlindCount }
+    ] : [
       { name: 'Pre-Review', value: preReviewCount },
       { name: 'Double-Blind', value: doubleBlindCount },
-      { name: 'Published', value: publishedCount },
-      { name: 'Rejected', value: rejectedCount }
+      { name: 'Accepted', value: acceptedCount }
     ].filter(item => item.value > 0);
 
     // Submission Type Distribution data
     const submissionTypeData = [
-      { name: 'Internal', value: internalSubmissions },
-      { name: 'External', value: externalSubmissions }
+      { name: 'Upload', value: uploadCount },
+      { name: 'Published', value: publishedCount },
+      { name: 'Rejected', value: rejectedCount }
     ].filter(item => item.value > 0);
 
     return { reviewStatusData, submissionTypeData };
   };
 
   const { reviewStatusData, submissionTypeData } = getChartData();
+
+  // Colors matching the dashboard cards
+  const REVIEW_STATUS_COLORS = ['#3B82F6', '#10B981', '#6366F1']; // Blue, Green, Indigo
+  const SUBMISSION_TYPE_COLORS = ['#8B5CF6', '#4F46E5', '#FF0000']; // Purple, Indigo, Red
 
   return (
     <div className="p-6">
@@ -89,16 +94,24 @@ const DashboardContent: React.FC = () => {
         {/* Review Status Distribution */}
         <div className="bg-white p-6 rounded-lg shadow-md">
           <h4 className="text-lg font-semibold mb-4">Review Status Distribution</h4>
-          <div className="h-[300px]">
-            <DashboardCharts.PieChart data={reviewStatusData} />
+          <div className="h-[400px]">
+            <DashboardCharts.PieChart 
+              data={reviewStatusData} 
+              colors={REVIEW_STATUS_COLORS}
+              showLegend={true}
+            />
           </div>
         </div>
 
         {/* Submission Type Distribution */}
         <div className="bg-white p-6 rounded-lg shadow-md">
           <h4 className="text-lg font-semibold mb-4">Submission Type Distribution</h4>
-          <div className="h-[300px]">
-            <DashboardCharts.PieChart data={submissionTypeData} />
+          <div className="h-[400px]">
+            <DashboardCharts.PieChart 
+              data={submissionTypeData} 
+              colors={SUBMISSION_TYPE_COLORS}
+              showLegend={true}
+            />
           </div>
         </div>
       </div>
@@ -134,5 +147,4 @@ const DashboardContent: React.FC = () => {
     </div>
   );
 };
-
 export default DashboardContent;
