@@ -1,8 +1,10 @@
 import React from 'react';
-import { BarChart as RechartsBarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart as RechartsPieChart, Pie, Cell } from 'recharts';
+import { BarChart as RechartsBarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart as RechartsPieChart, Pie, Cell, Legend } from 'recharts';
 
 interface ChartProps {
   data: Array<{ name: string; value: number }>;
+  colors?: string[];
+  showLegend?: boolean;
 }
 
 const COLORS = ['#3B82F6', '#10B981', '#6366F1', '#4F46E5', '#EF4444', '#8B5CF6'];
@@ -36,24 +38,33 @@ const BarChart: React.FC<ChartProps> = ({ data }) => (
   </ResponsiveContainer>
 );
 
-const PieChart: React.FC<ChartProps> = ({ data }) => (
+const PieChart: React.FC<ChartProps> = ({ data, colors = COLORS, showLegend = false }) => (
   <ResponsiveContainer width="100%" height="100%">
     <RechartsPieChart>
       <Pie
         data={data}
         cx="50%"
-        cy="50%"
+        cy="45%"
         labelLine={false}
         label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-        outerRadius={80}
+        outerRadius={110}
         fill="#8884d8"
         dataKey="value"
         animationDuration={1000}
       >
         {data.map((entry, index) => (
-          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+          <Cell key={`cell-${index}`} fill={colors[index % colors.length]} />
         ))}
       </Pie>
+      {showLegend && (
+        <Legend 
+          layout="horizontal"
+          align="center"
+          verticalAlign="bottom"
+          iconType="circle"
+          wrapperStyle={{ paddingTop: '20px' }}
+        />
+      )}
       <Tooltip />
     </RechartsPieChart>
   </ResponsiveContainer>
