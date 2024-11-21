@@ -14,11 +14,12 @@ const StaffRecords: React.FC = () => {
   const [selectedManuscript, setSelectedManuscript] = useState<any>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [revisionStatus, setRevisionStatus] = useState('');
-  const [selectedReviewers, setSelectedReviewers] = useState<string[]>([]);
+  const [selectedReviewers, setSelectedReviewers] = useState<string[]>(['', '', '']);
   const [rejectionDetails, setRejectionDetails] = useState({
     reason: '',
     comment: ''
   });
+  const [reviewerError, setReviewerError] = useState('');
 
   const revisionOptions = [
     'Accepted with revision',
@@ -74,23 +75,42 @@ const StaffRecords: React.FC = () => {
   };
 
   const handleProceedToDBR = () => {
-    if (selectedManuscript && selectedReviewers.length > 0) {
+    const filledReviewers = selectedReviewers.filter(r => r !== '');
+    if (filledReviewers.length !== 3) {
+      setReviewerError('Please select exactly 3 reviewers');
+      return;
+    }
+    
+    if (selectedManuscript) {
       const updatedManuscript = {
         ...selectedManuscript,
-        reviewers: selectedReviewers
+        reviewers: filledReviewers
       };
       updateManuscriptStatus(selectedManuscript.id, 'double-blind', updatedManuscript);
       setIsReviewerModalOpen(false);
-      setSelectedReviewers([]);
+      setSelectedReviewers(['', '', '']);
+      setReviewerError('');
     }
+  };
+
+  const handleReviewerSelection = (index: number, reviewerName: string) => {
+    const newSelectedReviewers = [...selectedReviewers];
+    newSelectedReviewers[index] = reviewerName;
+    setSelectedReviewers(newSelectedReviewers);
+    setReviewerError('');
   };
 
   const getReviewerDisplayName = (reviewer: any) => {
     return `${reviewer.firstName} ${reviewer.lastName} - ${reviewer.fieldOfReview}`;
   };
 
+  const availableReviewers = reviewers.filter(reviewer => 
+    !selectedReviewers.includes(getReviewerDisplayName(reviewer))
+  );
+
   return (
     <div className="bg-white p-6 rounded-lg shadow-md">
+      <h3 className="text-xl font-semibold mb-4">Pre-Review Records</h3>
       <SearchBar searchTerm={searchTerm} onSearchChange={setSearchTerm} />
       <div className="overflow-x-auto">
         <table className="min-w-full bg-white">
@@ -180,6 +200,12 @@ const StaffRecords: React.FC = () => {
                 <label className="font-semibold block">Editor:</label>
                 <p className="text-gray-700">{selectedManuscript.editor}</p>
               </div>
+              {selectedManuscript.revisionStatus && (
+                <div>
+                  <label className="font-semibold block">Revision Status:</label>
+                  <p className="text-gray-700">{selectedManuscript.revisionStatus}</p>
+                </div>
+              )}
             </div>
             <div className="mt-6 flex justify-end space-x-4">
               <button
@@ -277,42 +303,47 @@ const StaffRecords: React.FC = () => {
                 <X size={24} />
               </button>
             </div>
-            <div className="mb-4">
+            <div className="mb-6">
               <h4 className="text-lg font-semibold mb-2">Manuscript Title:</h4>
               <p className="text-gray-700">{selectedManuscript.title}</p>
+              <p className="text-gray-600 mt-2">Scope: {selectedManuscript.scope}</p>
             </div>
-            <div className="space-y-4">
-              {reviewers.map((reviewer) => (
-                <div key={reviewer.id} className="flex items-center">
-                  <input
-                    type="checkbox"
-                    id={reviewer.id.toString()}
-                    checked={selectedReviewers.includes(getReviewerDisplayName(reviewer))}
-                    onChange={(e) => {
-                      const reviewerName = getReviewerDisplayName(reviewer);
-                      if (e.target.checked) {
-                        if (selectedReviewers.length < 3) {
-                          setSelectedReviewers([...selectedReviewers, reviewerName]);
-                        }
-                      } else {
-                        setSelectedReviewers(selectedReviewers.filter(r => r !== reviewerName));
-                      }
-                    }}
-                    disabled={selectedReviewers.length >= 3 && !selectedReviewers.includes(getReviewerDisplayName(reviewer))}
-                    className="mr-2"
-                  />
-                  <label htmlFor={reviewer.id.toString()} className="text-gray-700">
-                    {getReviewerDisplayName(reviewer)}
+            {reviewerError && (
+              <div className="mb-4 p-2 bg-red-100 border border-red-400 text-red-700 rounded">
+                {reviewerError}
+              </div>
+            )}
+            <div className="space-y-6">
+              {[0, 1, 2].map((index) => (
+                <div key={index} className="space-y-2">
+                  <label className="block text-sm font-medium text-gray-700">
+                    Reviewer {index + 1}
                   </label>
+                  <select
+                    value={selectedReviewers[index]}
+                    onChange={(e) => handleReviewerSelection(index, e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="">Select Reviewer</option>
+                    {[
+                      ...availableReviewers,
+                      ...(selectedReviewers[index] ? [reviewers.find(r => getReviewerDisplayName(r) === selectedReviewers[index])] : [])
+                    ].filter(Boolean).map((reviewer) => (
+                      <option key={reviewer.id} value={getReviewerDisplayName(reviewer)}>
+                        {getReviewerDisplayName(reviewer)}
+                      </option>
+                    ))}
+                  </select>
                 </div>
               ))}
-              {reviewers.length === 0 && (
-                <p className="text-gray-500 text-center">No reviewers available. Please add reviewers in the Reviewers Info section.</p>
-              )}
             </div>
-            <div className="mt-6 flex justify-end space-x-4">
+            <div className="mt-8 flex justify-end space-x-4">
               <button
-                onClick={() => setIsReviewerModalOpen(false)}
+                onClick={() => {
+                  setIsReviewerModalOpen(false);
+                  setSelectedReviewers(['', '', '']);
+                  setReviewerError('');
+                }}
                 className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
               >
                 Cancel
@@ -320,7 +351,7 @@ const StaffRecords: React.FC = () => {
               <button
                 onClick={handleProceedToDBR}
                 className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 transition-colors"
-                disabled={selectedReviewers.length === 0}
+                disabled={selectedReviewers.filter(r => r !== '').length !== 3}
               >
                 Proceed to DBR
               </button>
