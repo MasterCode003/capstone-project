@@ -2,7 +2,7 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Users, UserCog } from 'lucide-react';
 import logoImage from '../assets/logo.png';
-import bgImage from '../assets/Bg.jpeg';
+import bgImage from '../assets/BG.jpg';
 
 const LandingPage: React.FC = () => {
   const navigate = useNavigate();
