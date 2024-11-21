@@ -1,10 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import DashboardCards from './DashboardCards';
 import DashboardCharts from './DashboardCharts';
 import DetailedRecordsModal from './DetailedRecordsModal';
 import { useDashboard } from '../contexts/DashboardContext';
-import { useDirectors } from '../contexts/DirectorsContext';
 
 const DashboardContent: React.FC = () => {
   const [selectedCard, setSelectedCard] = useState<string | null>(null);
@@ -12,37 +11,29 @@ const DashboardContent: React.FC = () => {
   const isDirectorDashboard = location.pathname.includes('/director');
   
   const {
-    uploadCount: staffUploadCount,
-    preReviewCount: staffPreReviewCount,
-    doubleBlindCount: staffDoubleBlindCount,
+    uploadCount,
+    preReviewCount,
+    doubleBlindCount,
     acceptedCount,
-    publishedCount: staffPublishedCount,
-    rejectedCount: staffRejectedCount,
-    reviewersCount: staffReviewersCount,
-    editorsCount: staffEditorsCount,
+    publishedCount,
+    rejectedCount,
+    reviewersCount,
+    editorsCount,
     firstHalfSubmissions,
-    secondHalfSubmissions
+    secondHalfSubmissions,
+    internalSubmissions,
+    externalSubmissions,
   } = useDashboard();
 
-  const {
-    uploadCount: directorUploadCount,
-    preReviewCount: directorPreReviewCount,
-    doubleBlindCount: directorDoubleBlindCount,
-    publishedCount: directorPublishedCount,
-    rejectedCount: directorRejectedCount,
-    reviewersCount: directorReviewersCount,
-    editorsCount: directorEditorsCount,
-  } = useDirectors();
-
   const cardData = {
-    preReviewCount: isDirectorDashboard ? directorPreReviewCount : staffPreReviewCount,
-    doubleBlindCount: isDirectorDashboard ? directorDoubleBlindCount : staffDoubleBlindCount,
-    ...(isDirectorDashboard ? {} : { acceptedCount }),
-    publishedCount: isDirectorDashboard ? directorPublishedCount : staffPublishedCount,
-    rejectedCount: isDirectorDashboard ? directorRejectedCount : staffRejectedCount,
-    uploadCount: isDirectorDashboard ? directorUploadCount : staffUploadCount,
-    reviewersCount: isDirectorDashboard ? directorReviewersCount : staffReviewersCount,
-    editorsCount: isDirectorDashboard ? directorEditorsCount : staffEditorsCount,
+    preReviewCount,
+    doubleBlindCount,
+    acceptedCount: isDirectorDashboard ? undefined : acceptedCount,
+    publishedCount,
+    rejectedCount,
+    uploadCount,
+    reviewersCount,
+    editorsCount,
   };
 
   const handleCardExpand = (cardId: string) => {
@@ -62,6 +53,33 @@ const DashboardContent: React.FC = () => {
     return titles[cardId] || cardId;
   };
 
+  const getChartData = () => {
+    // Review Status Distribution data
+    const reviewStatusData = isDirectorDashboard ? [
+      { name: 'Pre-Review', value: preReviewCount },
+      { name: 'Double-Blind', value: doubleBlindCount }
+    ] : [
+      { name: 'Pre-Review', value: preReviewCount },
+      { name: 'Double-Blind', value: doubleBlindCount },
+      { name: 'Accepted', value: acceptedCount }
+    ].filter(item => item.value > 0);
+
+    // Submission Type Distribution data
+    const submissionTypeData = [
+      { name: 'Upload', value: uploadCount },
+      { name: 'Published', value: publishedCount },
+      { name: 'Rejected', value: rejectedCount }
+    ].filter(item => item.value > 0);
+
+    return { reviewStatusData, submissionTypeData };
+  };
+
+  const { reviewStatusData, submissionTypeData } = getChartData();
+
+  // Colors matching the dashboard cards
+  const REVIEW_STATUS_COLORS = ['#3B82F6', '#10B981', '#6366F1']; // Blue, Green, Indigo
+  const SUBMISSION_TYPE_COLORS = ['#8B5CF6', '#4F46E5', '#EF4444']; // Purple, Indigo, Red
+
   return (
     <div className="p-6">
       {/* Cards */}
@@ -78,27 +96,23 @@ const DashboardContent: React.FC = () => {
         {/* Review Status Distribution */}
         <div className="bg-white p-6 rounded-lg shadow-md">
           <h4 className="text-lg font-semibold mb-4">Review Status Distribution</h4>
-          <div className="h-[300px]">
-            <DashboardCharts.PieChart
-              data={[
-                { name: 'Pre-Review', value: cardData.preReviewCount },
-                { name: 'Double-Blind', value: cardData.doubleBlindCount },
-                ...(isDirectorDashboard ? [] : [{ name: 'Accepted', value: acceptedCount || 0 }])
-              ].filter(item => item.value > 0)}
+          <div className="h-[400px]">
+            <DashboardCharts.PieChart 
+              data={reviewStatusData} 
+              colors={REVIEW_STATUS_COLORS}
+              showLegend={true}
             />
           </div>
         </div>
 
-        {/* Submission Status Distribution */}
+        {/* Submission Type Distribution */}
         <div className="bg-white p-6 rounded-lg shadow-md">
-          <h4 className="text-lg font-semibold mb-4">Submission Status Distribution</h4>
-          <div className="h-[300px]">
-            <DashboardCharts.PieChart
-              data={[
-                { name: 'Published', value: cardData.publishedCount },
-                { name: 'Rejected', value: cardData.rejectedCount },
-                { name: 'Upload', value: cardData.uploadCount }
-              ].filter(item => item.value > 0)}
+          <h4 className="text-lg font-semibold mb-4">Submission Type Distribution</h4>
+          <div className="h-[400px]">
+            <DashboardCharts.PieChart 
+              data={submissionTypeData} 
+              colors={SUBMISSION_TYPE_COLORS}
+              showLegend={true}
             />
           </div>
         </div>
