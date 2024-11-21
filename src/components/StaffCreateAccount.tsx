@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { UserPlus } from 'lucide-react';
+import bgImage from '../assets/Bg.jpeg';
 
 const StaffCreateAccount: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -14,23 +15,26 @@ const StaffCreateAccount: React.FC = () => {
       alert("Passwords don't match!");
       return;
     }
-    // Here you would typically handle account creation
     console.log('Staff account created:', { email });
     navigate('/staff/login');
   };
 
   return (
-    <div className="min-h-screen bg-cover bg-center bg-no-repeat flex items-center justify-center" style={{ backgroundImage: 'url(/src/assets/BG.jpg)' }}>
-      <div className="absolute inset-0 bg-black/50" />
-      <div className="bg-white/90 backdrop-blur-sm p-8 rounded-lg shadow-md w-96 relative z-10">
-        <h2 className="text-2xl font-bold mb-6 text-center text-[#000765]">Create Staff Account</h2>
+    <div 
+      className="min-h-screen flex items-center justify-center bg-cover bg-center bg-no-repeat"
+      style={{ 
+        backgroundImage: `linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.6)), url(${bgImage})`,
+      }}
+    >
+      <div className="bg-white p-8 rounded-lg shadow-md w-96">
+        <h2 className="text-2xl font-bold mb-6 text-center text-[#111877]">Create Staff Account</h2>
         <form onSubmit={handleSubmit}>
           <div className="mb-4">
             <label htmlFor="email" className="block text-gray-700 text-sm font-bold mb-2">Email</label>
             <input
               type="email"
               id="email"
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#000765]"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#111877]"
               placeholder="Enter your email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
@@ -42,7 +46,7 @@ const StaffCreateAccount: React.FC = () => {
             <input
               type="password"
               id="password"
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#000765]"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#111877]"
               placeholder="Enter your password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
@@ -54,7 +58,7 @@ const StaffCreateAccount: React.FC = () => {
             <input
               type="password"
               id="confirmPassword"
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#000765]"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#111877]"
               placeholder="Confirm your password"
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
@@ -63,14 +67,14 @@ const StaffCreateAccount: React.FC = () => {
           </div>
           <button
             type="submit"
-            className="w-full bg-[#000765] text-white py-2 px-4 rounded-md hover:bg-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50"
+            className="w-full bg-[#111877] text-white py-2 px-4 rounded-md hover:bg-[#1c2680] focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50"
           >
             <UserPlus className="inline mr-2" size={18} />
             Create Account
           </button>
         </form>
         <p className="mt-4 text-center text-sm text-gray-600">
-          Already have an account? <Link to="/staff/login" className="text-[#000765] hover:underline">Login</Link>
+          Already have an account? <Link to="/staff/login" className="text-[#111877] hover:underline">Login</Link>
         </p>
       </div>
     </div>
