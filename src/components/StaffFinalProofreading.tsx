@@ -16,7 +16,7 @@ const StaffFinalProofreading: React.FC = () => {
     datePublished: new Date().toISOString().split('T')[0]
   });
 
-  const scopeOptions = ['1', '2', 'Special Issue'];
+  const scopeOptions = ['1', '2', ' 3 Special Issue'];
   const currentYear = new Date().getFullYear();
   const yearOptions = Array.from({ length: 76 }, (_, i) => (currentYear + i).toString());
 

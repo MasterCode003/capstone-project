@@ -76,9 +76,9 @@ const StaffPublished: React.FC = () => {
               <th className="py-3 px-4 text-left">File Code</th>
               <th className="py-3 px-4 text-left">Journal/Research Title</th>
               <th className="py-3 px-4 text-left">Field/Scope</th>
-              <th className="py-3 px-4 text-left">Authors</th>
-              <th className="py-3 px-4 text-left">Scope #</th>
-              <th className="py-3 px-4 text-left">Volume Year</th>
+              <th className="py-3 px-4 text-left">Author</th>
+              <th className="py-3 px-4 text-left">Issue #</th>
+              <th className="py-3 px-4 text-left">Volume/Year</th>
               <th className="py-3 px-4 text-left">Date Published</th>
               <th className="py-3 px-4 text-left">Payment Status</th>
               <th className="py-3 px-4 text-left">Actions</th>
