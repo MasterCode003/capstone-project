@@ -41,7 +41,7 @@ const DetailedRecordsModal: React.FC<DetailedRecordsModalProps> = ({
       case 'rejected':
         return rejectedRecords;
       case 'pending':
-        return manuscriptRecords.filter(record => !record.status || record.status === 'pending');
+        return manuscriptRecords.filter(record => !record.status );
       case 'final-proofreading':
         return finalProofreadingRecords;
       default:
