@@ -77,15 +77,15 @@ export const RecordProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [publishedRecords, setPublishedRecords] = useLocalStorage<ManuscriptDetails[]>('publishedRecords', []);
 
   const addManuscript = (manuscript: ManuscriptDetails) => {
-    setManuscriptRecords(prev => [...prev, manuscript]);
+    setManuscriptRecords((prev: ManuscriptDetails[]) => [...prev, manuscript]);
   };
 
   const removeFromPreReview = (id: string) => {
-    setManuscriptRecords(prev => prev.filter(m => m.id !== id));
+    setManuscriptRecords((prev: ManuscriptDetails[]) => prev.filter((m: ManuscriptDetails) => m.id !== id));
   };
 
   const updateLayoutDetails = (id: string, layoutDetails: ManuscriptDetails['layoutDetails']) => {
-    setAcceptedRecords(prev => prev.map(record => 
+    setAcceptedRecords((prev: ManuscriptDetails[]) => prev.map(record => 
       record.id === id ? { ...record, layoutDetails } : record
     ));
   };
@@ -136,19 +136,19 @@ export const RecordProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     // Add to appropriate list based on status
     switch (status) {
       case 'double-blind':
-        setDoubleBlindRecords(prev => [...prev, updatedManuscript]);
+        setDoubleBlindRecords((prev: ManuscriptDetails[]) => [...prev, updatedManuscript]);
         break;
       case 'rejected':
-        setRejectedRecords(prev => [...prev, updatedManuscript]);
+        setRejectedRecords((prev: ManuscriptDetails[]) => [...prev, updatedManuscript]);
         break;
       case 'accepted':
-        setAcceptedRecords(prev => [...prev, updatedManuscript]);
+        setAcceptedRecords((prev: ManuscriptDetails[]) => [...prev, updatedManuscript]);
         break;
       case 'final-proofreading':
-        setFinalProofreadingRecords(prev => [...prev, updatedManuscript]);
+        setFinalProofreadingRecords((prev: ManuscriptDetails[]) => [...prev, updatedManuscript]);
         break;
       case 'published':
-        setPublishedRecords(prev => [...prev, {
+        setPublishedRecords((prev: ManuscriptDetails[]) => [...prev, {
           ...updatedManuscript,
           publishDetails: {
             ...updatedManuscript.publishDetails,
@@ -158,7 +158,6 @@ export const RecordProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         break;
     }
   };
-
   return (
     <RecordContext.Provider value={{
       manuscriptRecords,

@@ -38,11 +38,10 @@ export const ReviewersProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const removeReviewer = (id: number) => {
     setReviewers(prev => prev.filter(reviewer => reviewer.id !== id));
   };
-
   const updateReviewer = (id: number, updatedReviewer: Reviewer) => {
     setReviewers(prev => prev.map(reviewer => 
       reviewer.id === id ? updatedReviewer : reviewer
-    ));
+     ));
   };
 
   return (
