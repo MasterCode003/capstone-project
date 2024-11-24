@@ -39,7 +39,7 @@ export const SCOPE_OPTIONS = [
   { code: 'IECT', name: 'Engineering, Communication, Technology', type: 'internal', baseNumber: 1009 },
   { code: 'EMSP', name: 'Mathematics, Statistics, and Physics', type: 'external', baseNumber: 977 },
   { code: 'IMSP', name: 'Mathematics, Statistics, and Physics', type: 'internal', baseNumber: 914 },
-  { code: 'ORS', name: 'Other Related Studies', type: 'other', baseNumber: 1160 },
+  { code: 'ORS', name: ' Related Studies', type: 'other', baseNumber: 1160 },
 ];
 
 const StaffUpload: React.FC = () => {

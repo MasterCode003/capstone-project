@@ -15,7 +15,7 @@ const LandingPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col justify-center items-center bg-cover bg-center bg-no-repeat" style={{ backgroundImage: 'url(/src/assets/BG.jpg)' }}>
+    <div className="min-h-screen flex flex-col justify-center items-center bg-cover bg-center bg-no-repeat" style={{ backgroundImage: 'url(/src/assets/Bg.jpeg)' }}>
       <div className="absolute inset-0 bg-black/50" />
       <div className="relative z-10 flex flex-col items-center">
         <div className="mb-8">

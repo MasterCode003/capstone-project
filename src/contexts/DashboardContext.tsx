@@ -30,10 +30,11 @@ const initialMonthlyData = {
     { name: 'Feb', value: 0 },
     { name: 'Mar', value: 0 },
     { name: 'Apr', value: 0 },
-    { name: 'May', value: 0 }
+    { name: 'May', value: 0 },
+    { name: 'Jun', value: 0 },
   ],
   secondHalf: [
-    { name: 'Jun', value: 0 },
+  
     { name: 'Jul', value: 0 },
     { name: 'Aug', value: 0 },
     { name: 'Sep', value: 0 },
@@ -91,7 +92,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     externalSubmissions: 0,
   });
 
-  const updateTimeoutRef = useRef<NodeJS.Timeout>();
+  const updateTimeoutRef = useRef<number>();
 
   const calculateMonthlySubmissions = useCallback(() => {
     const allRecords = [

@@ -171,6 +171,7 @@ const StaffEditorsInfo: React.FC = () => {
                   <option value="">Select Position</option>
                   <option value="Chief Editor">Chief Editor</option>
                   <option value="Assistant Editor">Assistant Editor</option>
+                  <option value="Director">Director</option>
                 </select>
               </div>
               <div className="mb-4">
