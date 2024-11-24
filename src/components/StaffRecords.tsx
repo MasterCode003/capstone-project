@@ -33,7 +33,9 @@ const StaffRecords: React.FC = () => {
     'Irrelevant',
     'High Plagiarism Rate',
     'Withdrawn by the Author',
-    'Poor Adherence'
+    'Poor Adherence',
+    'Insufficient Data',
+    'Low Grammar Score (<85%)',
   ];
 
   const filteredRecords = manuscriptRecords.filter(record => 
