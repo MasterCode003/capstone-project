@@ -77,27 +77,26 @@ export const RecordProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [publishedRecords, setPublishedRecords] = useLocalStorage<ManuscriptDetails[]>('publishedRecords', []);
 
   const addManuscript = (manuscript: ManuscriptDetails) => {
-    setManuscriptRecords((prev: ManuscriptDetails[]) => [...prev, manuscript]);
-  };
+    setManuscriptRecords([...manuscriptRecords, manuscript]);  };
 
   const removeFromPreReview = (id: string) => {
-    setManuscriptRecords((prev: ManuscriptDetails[]) => prev.filter((m: ManuscriptDetails) => m.id !== id));
+    setManuscriptRecords((prev: ManuscriptDetails[]) => prev.filter(m => m.id !== id));
   };
 
   const updateLayoutDetails = (id: string, layoutDetails: ManuscriptDetails['layoutDetails']) => {
-    setAcceptedRecords((prev: ManuscriptDetails[]) => prev.map(record => 
+    setAcceptedRecords(prev => prev.map(record => 
       record.id === id ? { ...record, layoutDetails } : record
     ));
   };
 
   const updateProofreadingDetails = (id: string, proofreadingDetails: ManuscriptDetails['proofreadingDetails']) => {
-    setFinalProofreadingRecords(prev => prev.map(record => 
+    setFinalProofreadingRecords((prev: ManuscriptDetails[]) => prev.map((record: ManuscriptDetails) => 
       record.id === id ? { ...record, proofreadingDetails } : record
     ));
   };
 
   const updatePaymentStatus = (id: string, paymentStatus: 'paid' | 'not-paid') => {
-    setPublishedRecords(prev => prev.map(record => 
+    setPublishedRecords((prev: ManuscriptDetails[]) => prev.map((record: ManuscriptDetails) => 
       record.id === id ? {
         ...record,
         publishDetails: {
@@ -136,30 +135,30 @@ export const RecordProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     // Add to appropriate list based on status
     switch (status) {
       case 'double-blind':
-        setDoubleBlindRecords((prev: ManuscriptDetails[]) => [...prev, updatedManuscript]);
+        setDoubleBlindRecords(prev => [...prev, updatedManuscript]);
         break;
       case 'rejected':
-        setRejectedRecords((prev: ManuscriptDetails[]) => [...prev, updatedManuscript]);
+        setRejectedRecords(prev => [...prev, updatedManuscript]);
         break;
       case 'accepted':
-        setAcceptedRecords((prev: ManuscriptDetails[]) => [...prev, updatedManuscript]);
+        setAcceptedRecords(prev => [...prev, updatedManuscript]);
         break;
       case 'final-proofreading':
-        setFinalProofreadingRecords((prev: ManuscriptDetails[]) => [...prev, updatedManuscript]);
+        setFinalProofreadingRecords(prev => [...prev, updatedManuscript]);
         break;
       case 'published':
-        setPublishedRecords((prev: ManuscriptDetails[]) => [...prev, {
+        setPublishedRecords(prev => [...prev, {
           ...updatedManuscript,
           publishDetails: {
             ...updatedManuscript.publishDetails,
             paymentStatus: 'not-paid'
           }
-        }]);
+        } as ManuscriptDetails]);
         break;
     }
   };
-  return (
-    <RecordContext.Provider value={{
+
+  return (    <RecordContext.Provider value={{
       manuscriptRecords,
       doubleBlindRecords,
       rejectedRecords,

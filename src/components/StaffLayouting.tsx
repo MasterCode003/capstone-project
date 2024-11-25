@@ -8,17 +8,18 @@ const StaffLayouting: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isReviseModalOpen, setIsReviseModalOpen] = useState(false);
+  const [isStatusModalOpen, setIsStatusModalOpen] = useState(false);
+  const [isConfirmationModalOpen, setIsConfirmationModalOpen] = useState(false);
   const [selectedRecord, setSelectedRecord] = useState<any>(null);
-  const [dateSent, setDateSent] = useState('');
+  const [dateFinished, setDateFinished] = useState('');
   const [proofreader, setProofreader] = useState('');
-  const [revisionStatus, setRevisionStatus] = useState('');
-
-  const revisionOptions = [
-    'Accepted with revision',
-    'Not acceptable',
-    'Accepted',
-    'Excellent'
-  ];
+  const [proofreaderEmail, setProofreaderEmail] = useState('');
+  const [layoutArtistEmail, setLayoutArtistEmail] = useState('');
+  const [revisionComments, setRevisionComments] = useState('');
+  const [issue, setIssue] = useState('');
+  const [volumeNumber, setVolumeNumber] = useState('');
+  const [year, setYear] = useState('');
+  const [missingFields, setMissingFields] = useState<string[]>([]);
 
   // Filter only records that have layout details
   const layoutRecords = acceptedRecords.filter(record => record.layoutDetails);
@@ -32,44 +33,103 @@ const StaffLayouting: React.FC = () => {
 
   const handleViewDetails = (record: any) => {
     setSelectedRecord(record);
-    setDateSent(new Date().toISOString().split('T')[0]);
+    setDateFinished(new Date().toISOString().split('T')[0]);
     setProofreader('');
+    setProofreaderEmail('');
+    setLayoutArtistEmail('');
     setIsModalOpen(true);
   };
 
   const handleRevise = () => {
-    if (selectedRecord && revisionStatus) {
-      updateLayoutDetails(selectedRecord.id, {
-        ...selectedRecord.layoutDetails,
+    if (selectedRecord && revisionComments) {
+      const updatedLayoutDetails: LayoutDetails = {
+        ...selectedRecord.layoutDetails!,
         status: 'revised',
-        revisionStatus
+        revisionComments,
+        layoutArtist: selectedRecord.layoutDetails!.layoutArtist,
+        layoutArtistEmail: selectedRecord.layoutDetails!.layoutArtistEmail
+      };
+
+      updateLayoutDetails(selectedRecord.id, {
+        layoutDetails: updatedLayoutDetails,
+        revisionComments,
+        firstRevisionDate: selectedRecord.firstRevisionDate || new Date().toISOString().split('T')[0]
       });
+
       setIsReviseModalOpen(false);
-      setRevisionStatus('');
+      setRevisionComments('');
     }
   };
 
   const handleProceedToFPR = () => {
-    if (selectedRecord && dateSent && proofreader) {
+    if (selectedRecord && dateFinished && proofreader && proofreaderEmail && layoutArtistEmail) {
       const updatedManuscript = {
         ...selectedRecord,
         proofreadingDetails: {
-          dateSent,
+          dateSent: dateFinished,
           proofreader,
+          proofreaderEmail,
           status: 'pending',
-          revisionStatus: selectedRecord.layoutDetails?.revisionStatus
+          revisionStatus: selectedRecord.layoutDetails?.revisionStatus,
+          revisionComments: selectedRecord.layoutDetails?.revisionComments
+        },
+        layoutDetails: {
+          ...selectedRecord.layoutDetails,
+          layoutArtistEmail,
+          dateFinished
         }
       };
       updateManuscriptStatus(selectedRecord.id, 'final-proofreading', updatedManuscript);
       setIsModalOpen(false);
-      setDateSent('');
+      setDateFinished('');
       setProofreader('');
+      setProofreaderEmail('');
+      setLayoutArtistEmail('');
+    }
+  };
+
+  const handleConfirmProceedToFPR = () => {
+    const missing = [];
+    if (!dateFinished) missing.push('Date Finished');
+    if (!proofreader) missing.push('Proofreader Name');
+    if (!proofreaderEmail) missing.push('Proofreader Email');
+    if (!layoutArtistEmail) missing.push('Layout Artist Email');
+    if (!issue) missing.push('Issue');
+    if (!volumeNumber) missing.push('Volume Number');
+    if (!year) missing.push('Year');
+
+    if (missing.length > 0) {
+      setMissingFields(missing);
+      return;
+    }
+
+    handleProceedToFPR();
+    setIsConfirmationModalOpen(false);
+    setMissingFields([]);
+  };
+
+  const validateFields = () => {
+    const missing = [];
+    if (!dateFinished) missing.push('Date Finished');
+    if (!proofreader) missing.push('Proofreader Name');
+    if (!proofreaderEmail) missing.push('Proofreader Email');
+    if (!layoutArtistEmail) missing.push('Layout Artist Email');
+    if (!issue) missing.push('Issue');
+    if (!volumeNumber) missing.push('Volume Number');
+    if (!year) missing.push('Year');
+    setMissingFields(missing);
+    return missing.length === 0;
+  };
+
+  const handleProceedToFPRClick = () => {
+    if (validateFields()) {
+      setIsConfirmationModalOpen(true);
     }
   };
 
   return (
     <div className="bg-white p-6 rounded-lg shadow-md">
-      <h3 className="text-xl font-semibold mb-4">Layouting Records</h3>
+      <h3 className="text-xl font-semibold mb-4">Records</h3>
       <SearchBar searchTerm={searchTerm} onSearchChange={setSearchTerm} />
       <div className="overflow-x-auto">
         <table className="min-w-full bg-white">
@@ -106,10 +166,16 @@ const StaffLayouting: React.FC = () => {
                       ? 'Revised'
                       : 'In Progress'}
                   </span>
-                  {record.layoutDetails?.revisionStatus && (
-                    <span className="ml-2 px-2 py-1 rounded-full text-xs bg-blue-100 text-blue-800">
-                      {record.layoutDetails.revisionStatus}
-                    </span>
+                  {record.layoutDetails?.revisionComments && (
+                    <button
+                      onClick={() => {
+                        setSelectedRecord(record);
+                        setIsStatusModalOpen(true);
+                      }}
+                      className="bg-gray-100 text-gray-700 px-2 py-1 rounded-md text-sm hover:bg-gray-200 transition-colors"
+                    >
+                      View Comments
+                    </button>
                   )}
                 </td>
                 <td className="py-4 px-4">
@@ -130,19 +196,25 @@ const StaffLayouting: React.FC = () => {
       {/* Layout Details Modal */}
       {isModalOpen && selectedRecord && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded-lg w-[600px]">
+          <div className="bg-white p-6 rounded-lg w-[800px] max-h-[90vh] overflow-y-auto">
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-xl font-semibold">Layout Details</h3>
               <button onClick={() => setIsModalOpen(false)} className="text-gray-500 hover:text-gray-700">
                 <X size={24} />
               </button>
             </div>
-            <div className="space-y-4">
+            
+            {/* Top section - Basic Info */}
+            <div className="grid grid-cols-2 gap-4 mb-6">
               <div>
                 <label className="font-semibold block">File Code:</label>
                 <p className="text-gray-700">{selectedRecord.scopeCode}</p>
               </div>
               <div>
+                <label className="font-semibold block">Field/Scope:</label>
+                <p className="text-gray-700">{`${selectedRecord.scopeType.charAt(0).toUpperCase() + selectedRecord.scopeType.slice(1)} ${selectedRecord.scope}`}</p>
+              </div>
+              <div className="col-span-2">
                 <label className="font-semibold block">Journal/Research Title:</label>
                 <p className="text-gray-700">{selectedRecord.title}</p>
               </div>
@@ -151,57 +223,157 @@ const StaffLayouting: React.FC = () => {
                 <p className="text-gray-700">{selectedRecord.authors}</p>
               </div>
               <div>
-                <label className="font-semibold block">Field/Scope:</label>
-                <p className="text-gray-700">{`${selectedRecord.scopeType.charAt(0).toUpperCase() + selectedRecord.scopeType.slice(1)} ${selectedRecord.scope}`}</p>
-              </div>
-              <div>
-                <label className="font-semibold block">Date Accepted:</label>
-                <p className="text-gray-700">{selectedRecord.layoutDetails?.dateAccepted}</p>
-              </div>
-              <div>
                 <label className="font-semibold block">Layout Artist:</label>
                 <p className="text-gray-700">{selectedRecord.layoutDetails?.layoutArtist}</p>
               </div>
+            </div>
+
+            {/* Middle section - Status and Dates */}
+            <div className="grid grid-cols-2 gap-4 mb-6">
               <div>
                 <label className="font-semibold block">Status:</label>
-                <p className="text-gray-700 capitalize">{selectedRecord.layoutDetails?.status}</p>
-                {selectedRecord.layoutDetails?.revisionStatus && (
-                  <p className="text-blue-600 mt-1">{selectedRecord.layoutDetails.revisionStatus}</p>
-                )}
+                <div className="space-y-2">
+                  {selectedRecord.layoutDetails?.revisionComments && (
+                    <button
+                      onClick={() => {
+                        setSelectedRecord(selectedRecord);
+                        setIsStatusModalOpen(true);
+                      }}
+                      className="bg-gray-100 text-gray-700 px-2 py-1 rounded-md text-sm hover:bg-gray-200 transition-colors"
+                    >
+                      View Comments
+                    </button>
+                  )}
+                </div>
               </div>
+              {selectedRecord.firstRevisionDate && (
+                <div>
+                  <label className="font-semibold block">First Revision Date:</label>
+                  <p className="text-gray-700">{selectedRecord.firstRevisionDate}</p>
+                </div>
+              )}
+            </div>
 
-              {/* Additional fields */}
-              <div className="border-t pt-4">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Date Sent
-                </label>
-                <input
-                  type="date"
-                  value={dateSent}
-                  onChange={(e) => setDateSent(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Proofreader Name
-                </label>
-                <input
-                  type="text"
-                  value={proofreader}
-                  onChange={(e) => setProofreader(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="Enter proofreader name"
-                  required
-                />
+            {/* Form section */}
+            <div className="border-t pt-4">
+              {missingFields.length > 0 && (
+                <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-md">
+                  <p className="text-red-600 font-medium mb-2">Please fill out the following required fields:</p>
+                  <ul className="list-disc list-inside text-red-600">
+                    {missingFields.map((field, index) => (
+                      <li key={index}>{field}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              <div className="grid grid-cols-2 gap-4">
+                {/* Left Column */}
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Date Finished
+                    </label>
+                    <input
+                      type="date"
+                      value={dateFinished}
+                      onChange={(e) => setDateFinished(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Layout Artist Email
+                    </label>
+                    <input
+                      type="email"
+                      value={layoutArtistEmail}
+                      onChange={(e) => setLayoutArtistEmail(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="Enter layout artist email"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Proofreader Name
+                    </label>
+                    <input
+                      type="text"
+                      value={proofreader}
+                      onChange={(e) => setProofreader(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="Enter proofreader name"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Issue
+                    </label>
+                    <input
+                      type="text"
+                      value={issue}
+                      onChange={(e) => setIssue(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="Enter issue number"
+                      required
+                    />
+                  </div>
+                </div>
+
+                {/* Right Column */}
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Proofreader Email
+                    </label>
+                    <input
+                      type="email"
+                      value={proofreaderEmail}
+                      onChange={(e) => setProofreaderEmail(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="Enter proofreader email"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Volume Number
+                    </label>
+                    <input
+                      type="text"
+                      value={volumeNumber}
+                      onChange={(e) => setVolumeNumber(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="Enter volume number"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Year
+                    </label>
+                    <input
+                      type="text"
+                      value={year}
+                      onChange={(e) => setYear(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="Enter year"
+                      required
+                    />
+                  </div>
+                </div>
               </div>
             </div>
 
             {/* Action buttons */}
             <div className="mt-6 flex justify-end space-x-4">
               <button
-                onClick={() => setIsModalOpen(false)}
+                onClick={() => {
+                  setIsModalOpen(false);
+                  setMissingFields([]);
+                }}
                 className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
               >
                 Close
@@ -210,15 +382,15 @@ const StaffLayouting: React.FC = () => {
                 onClick={() => {
                   setIsModalOpen(false);
                   setIsReviseModalOpen(true);
+                  setMissingFields([]);
                 }}
                 className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
               >
                 Revise
               </button>
               <button
-                onClick={handleProceedToFPR}
+                onClick={handleProceedToFPRClick}
                 className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 transition-colors"
-                disabled={!dateSent || !proofreader}
               >
                 Proceed to FPR
               </button>
@@ -244,21 +416,16 @@ const StaffLayouting: React.FC = () => {
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Revision Status
+                  Revision Comments
                 </label>
-                <select
-                  value={revisionStatus}
-                  onChange={(e) => setRevisionStatus(e.target.value)}
+                <textarea
+                  value={revisionComments}
+                  onChange={(e) => setRevisionComments(e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  rows={4}
+                  placeholder="Enter revision comments"
                   required
-                >
-                  <option value="">Select Status</option>
-                  {revisionOptions.map((option) => (
-                    <option key={option} value={option}>
-                      {option}
-                    </option>
-                  ))}
-                </select>
+                />
               </div>
             </div>
             <div className="mt-6 flex justify-end space-x-4">
@@ -271,9 +438,96 @@ const StaffLayouting: React.FC = () => {
               <button
                 onClick={handleRevise}
                 className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition-colors"
-                disabled={!revisionStatus}
+                disabled={!revisionComments}
               >
                 Submit Revision
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Confirmation Modal */}
+      {isConfirmationModalOpen && selectedRecord && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-lg w-[500px]">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-xl font-semibold">Confirm Proceed to Final Proofreading</h3>
+              <button onClick={() => setIsConfirmationModalOpen(false)} className="text-gray-500 hover:text-gray-700">
+                <X size={24} />
+              </button>
+            </div>
+            <div className="mb-6">
+              <p className="text-gray-700">Are you sure you want to proceed with this manuscript to Final Proofreading?</p>
+              {missingFields.length > 0 && (
+                <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-md">
+                  <p className="text-red-600 font-medium mb-2">Please fill out the following required fields:</p>
+                  <ul className="list-disc list-inside text-red-600">
+                    {missingFields.map((field, index) => (
+                      <li key={index}>{field}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              <div className="mt-4">
+                <h4 className="font-semibold mb-2">Manuscript Details:</h4>
+                <p className="text-gray-700"><span className="font-medium">Title:</span> {selectedRecord.title}</p>
+                <p className="text-gray-700"><span className="font-medium">Author(s):</span> {selectedRecord.authors}</p>
+                <p className="text-gray-700"><span className="font-medium">Proofreader:</span> {proofreader}</p>
+              </div>
+            </div>
+            <div className="flex justify-end space-x-4">
+              <button
+                onClick={() => setIsConfirmationModalOpen(false)}
+                className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleConfirmProceedToFPR}
+                className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 transition-colors"
+              >
+                Confirm
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Status Modal */}
+      {isStatusModalOpen && selectedRecord && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-lg w-[500px]">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-xl font-semibold">Layout Status</h3>
+              <button onClick={() => setIsStatusModalOpen(false)} className="text-gray-500 hover:text-gray-700">
+                <X size={24} />
+              </button>
+            </div>
+            <div className="space-y-4">
+              <div>
+                <h4 className="font-semibold mb-2">Manuscript Title:</h4>
+                <p className="text-gray-700">{selectedRecord.title}</p>
+              </div>
+              {selectedRecord.firstRevisionDate && (
+                <div>
+                  <h4 className="font-semibold mb-2">First Revision Date:</h4>
+                  <p className="text-gray-700">{selectedRecord.firstRevisionDate}</p>
+                </div>
+              )}
+              {selectedRecord.layoutDetails?.revisionComments && (
+                <div>
+                  <h4 className="font-semibold mb-2">Revision Comments:</h4>
+                  <p className="text-gray-700">{selectedRecord.layoutDetails.revisionComments}</p>
+                </div>
+              )}
+            </div>
+            <div className="mt-6 flex justify-end">
+              <button
+                onClick={() => setIsStatusModalOpen(false)}
+                className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+              >
+                Close
               </button>
             </div>
           </div>

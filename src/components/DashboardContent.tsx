@@ -4,7 +4,6 @@ import DashboardCards from './DashboardCards';
 import DashboardCharts from './DashboardCharts';
 import DetailedRecordsModal from './DetailedRecordsModal';
 import { useDashboard } from '../contexts/DashboardContext';
-import { useDirectors } from '../contexts/DirectorsContext';
 
 const DashboardContent: React.FC = () => {
   const [selectedCard, setSelectedCard] = useState<string | null>(null);
@@ -12,37 +11,28 @@ const DashboardContent: React.FC = () => {
   const isDirectorDashboard = location.pathname.includes('/director');
   
   const {
-    uploadCount: staffUploadCount,
-    preReviewCount: staffPreReviewCount,
-    doubleBlindCount: staffDoubleBlindCount,
+    uploadCount,
+    preReviewCount,
+    doubleBlindCount,
     acceptedCount,
-    publishedCount: staffPublishedCount,
-    rejectedCount: staffRejectedCount,
-    reviewersCount: staffReviewersCount,
-    editorsCount: staffEditorsCount,
+    publishedCount,
+    rejectedCount,
+    reviewersCount,
+    editorsCount,
     firstHalfSubmissions,
-    secondHalfSubmissions
+    secondHalfSubmissions,
+  
   } = useDashboard();
 
-  const {
-    uploadCount: directorUploadCount,
-    preReviewCount: directorPreReviewCount,
-    doubleBlindCount: directorDoubleBlindCount,
-    publishedCount: directorPublishedCount,
-    rejectedCount: directorRejectedCount,
-    reviewersCount: directorReviewersCount,
-    editorsCount: directorEditorsCount,
-  } = useDirectors();
-
   const cardData = {
-    preReviewCount: isDirectorDashboard ? directorPreReviewCount : staffPreReviewCount,
-    doubleBlindCount: isDirectorDashboard ? directorDoubleBlindCount : staffDoubleBlindCount,
-    ...(isDirectorDashboard ? {} : { acceptedCount }),
-    publishedCount: isDirectorDashboard ? directorPublishedCount : staffPublishedCount,
-    rejectedCount: isDirectorDashboard ? directorRejectedCount : staffRejectedCount,
-    uploadCount: isDirectorDashboard ? directorUploadCount : staffUploadCount,
-    reviewersCount: isDirectorDashboard ? directorReviewersCount : staffReviewersCount,
-    editorsCount: isDirectorDashboard ? directorEditorsCount : staffEditorsCount,
+    preReviewCount,
+    doubleBlindCount,
+    acceptedCount: isDirectorDashboard ? undefined : acceptedCount,
+    publishedCount,
+    rejectedCount,
+    uploadCount,
+    reviewersCount,
+    editorsCount,
   };
 
   const handleCardExpand = (cardId: string) => {
@@ -62,6 +52,33 @@ const DashboardContent: React.FC = () => {
     return titles[cardId] || cardId;
   };
 
+  const getChartData = () => {
+    // Review Status Distribution data (focusing on prereview, doubleblind, accepted only)
+    const reviewStatusData = [
+      { name: 'Pre-Review', value: preReviewCount || 0, color: '#9333ea' },
+      { name: 'Double-Blind', value: doubleBlindCount || 0, color: '#ef4444' },
+      { name: 'Accepted', value: acceptedCount || 0, color: '#6366f1' }
+    ].filter(item => item.value > 0);
+
+    // Submission Type Distribution data (showing upload, reject, publish)
+    const submissionTypeData = [
+      { name: 'Upload', value: uploadCount || 0, color: '#9333ea' }, // bg-purple-500
+      { name: 'Rejected', value: rejectedCount || 0, color: '#ef4444' }, // bg-red-500
+      { name: 'Published', value: publishedCount || 0, color: '#6366f1' } // bg-indigo-500
+    ].filter(item => item.value > 0);
+
+    // Ensure at least one data point exists
+    if (reviewStatusData.length === 0) {
+      reviewStatusData.push({ name: 'No Data', value: 1, color: '#9333ea' });
+    }
+    if (submissionTypeData.length === 0) {
+      submissionTypeData.push({ name: 'No Data', value: 1, color: '#9333ea' });
+    }
+
+    return { reviewStatusData, submissionTypeData };
+  };
+  const { reviewStatusData, submissionTypeData } = getChartData();
+
   return (
     <div className="p-6">
       {/* Cards */}
@@ -79,27 +96,15 @@ const DashboardContent: React.FC = () => {
         <div className="bg-white p-6 rounded-lg shadow-md">
           <h4 className="text-lg font-semibold mb-4">Review Status Distribution</h4>
           <div className="h-[300px]">
-            <DashboardCharts.PieChart
-              data={[
-                { name: 'Pre-Review', value: cardData.preReviewCount },
-                { name: 'Double-Blind', value: cardData.doubleBlindCount },
-                ...(isDirectorDashboard ? [] : [{ name: 'Accepted', value: acceptedCount || 0 }])
-              ].filter(item => item.value > 0)}
-            />
+            <DashboardCharts.PieChart data={reviewStatusData} />
           </div>
         </div>
 
-        {/* Submission Status Distribution */}
+        {/* Submission Type Distribution */}
         <div className="bg-white p-6 rounded-lg shadow-md">
-          <h4 className="text-lg font-semibold mb-4">Submission Status Distribution</h4>
+          <h4 className="text-lg font-semibold mb-4">Submission Type Distribution</h4>
           <div className="h-[300px]">
-            <DashboardCharts.PieChart
-              data={[
-                { name: 'Published', value: cardData.publishedCount },
-                { name: 'Rejected', value: cardData.rejectedCount },
-                { name: 'Upload', value: cardData.uploadCount }
-              ].filter(item => item.value > 0)}
-            />
+            <DashboardCharts.PieChart data={submissionTypeData} />
           </div>
         </div>
       </div>
@@ -108,7 +113,7 @@ const DashboardContent: React.FC = () => {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* First Half */}
         <div className="bg-white p-6 rounded-lg shadow-md">
-          <h4 className="text-lg font-semibold mb-4">Monthly Submissions (January - June)</h4>
+          <h4 className="text-lg font-semibold mb-4">Monthly Submissions (January - May)</h4>
           <div className="h-[300px]">
             <DashboardCharts.BarChart data={firstHalfSubmissions} />
           </div>
@@ -116,7 +121,7 @@ const DashboardContent: React.FC = () => {
 
         {/* Second Half */}
         <div className="bg-white p-6 rounded-lg shadow-md">
-          <h4 className="text-lg font-semibold mb-4">Monthly Submissions (July - December)</h4>
+          <h4 className="text-lg font-semibold mb-4">Monthly Submissions (June - December)</h4>
           <div className="h-[300px]">
             <DashboardCharts.BarChart data={secondHalfSubmissions} />
           </div>

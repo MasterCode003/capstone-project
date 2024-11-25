@@ -1,5 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { Upload, Search, X } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { useEditors } from '../contexts/EditorsContext';
 import { useRecords } from '../contexts/RecordContext';
 import { useDashboard } from '../contexts/DashboardContext';
@@ -39,15 +40,17 @@ export const SCOPE_OPTIONS = [
   { code: 'IECT', name: 'Engineering, Communication, Technology', type: 'internal', baseNumber: 1009 },
   { code: 'EMSP', name: 'Mathematics, Statistics, and Physics', type: 'external', baseNumber: 977 },
   { code: 'IMSP', name: 'Mathematics, Statistics, and Physics', type: 'internal', baseNumber: 914 },
-  { code: 'ORS', name: ' Related Studies', type: 'other', baseNumber: 1160 },
+  { code: 'ORS', name: 'Other Related Studies', type: 'other', baseNumber: 1160 },
 ];
 
 const StaffUpload: React.FC = () => {
+  const navigate = useNavigate();
   const { editors } = useEditors();
   const { addManuscript } = useRecords();
   const { updateStats } = useDashboard();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
+  const [showConfirmation, setShowConfirmation] = useState(false);
   const [manuscriptDetails, setManuscriptDetails] = useState<ManuscriptDetails>({
     id: '',
     title: '',
@@ -103,6 +106,10 @@ const StaffUpload: React.FC = () => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    setShowConfirmation(true);
+  };
+
+  const handleConfirmSubmit = () => {
     const newManuscript = {
       ...manuscriptDetails,
       id: manuscriptDetails.scopeCode,
@@ -110,6 +117,7 @@ const StaffUpload: React.FC = () => {
     };
     addManuscript(newManuscript);
     updateStats();
+    setShowConfirmation(false);
     setIsModalOpen(false);
     setIsSuccessModalOpen(true);
     setManuscriptDetails({
@@ -134,6 +142,16 @@ const StaffUpload: React.FC = () => {
 
   const handleGrammarCheck = () => {
     setGrammarCheckResult('Grammar check complete...\nSpelling: 100%\nGrammar: 98%\nReadability: High\nSuggested improvements: 2 minor edits');
+  };
+
+  const handleViewRecords = () => {
+    setShowConfirmation(true);
+  };
+
+  const handleConfirmViewRecords = () => {
+    setShowConfirmation(false);
+    setIsSuccessModalOpen(false);
+    navigate('/staff/pre-review/records');
   };
 
   return (
@@ -198,7 +216,6 @@ const StaffUpload: React.FC = () => {
           Proceed
         </button>
       </div>
-
       {/* Add Manuscript Modal */}
       {isModalOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -308,6 +325,32 @@ const StaffUpload: React.FC = () => {
                 Save Details
               </button>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Confirmation Modal */}
+      {showConfirmation && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-lg w-96">
+            <div className="mb-4">
+              <h3 className="text-xl font-semibold">Confirm Submission</h3>
+              <p className="text-gray-600 mt-2">Are you sure you want to save this manuscript?</p>
+            </div>
+            <div className="flex space-x-2">
+              <button
+                onClick={() => setShowConfirmation(false)}
+                className="flex-1 bg-gray-500 text-white py-2 px-4 rounded-md hover:bg-gray-600 transition-colors"
+              >
+                No
+              </button>
+              <button
+                onClick={handleConfirmSubmit}
+                className="flex-1 bg-green-500 text-white py-2 px-4 rounded-md hover:bg-green-600 transition-colors"
+              >
+                Yes
+              </button>
+            </div>
           </div>
         </div>
       )}

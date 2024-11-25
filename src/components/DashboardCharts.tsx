@@ -2,7 +2,11 @@ import React from 'react';
 import { BarChart as RechartsBarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart as RechartsPieChart, Pie, Cell } from 'recharts';
 
 interface ChartProps {
-  data: Array<{ name: string; value: number }>;
+  data: Array<{ 
+    name: string; 
+    value: number;
+    color?: string;
+  }>;
 }
 
 const COLORS = ['#3B82F6', '#10B981', '#6366F1', '#4F46E5', '#EF4444', '#8B5CF6'];
@@ -45,16 +49,29 @@ const PieChart: React.FC<ChartProps> = ({ data }) => (
         cy="50%"
         labelLine={false}
         label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-        outerRadius={80}
+        innerRadius={60}
+        outerRadius={90}
         fill="#8884d8"
         dataKey="value"
         animationDuration={1000}
       >
         {data.map((entry, index) => (
-          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+          <Cell 
+            key={`cell-${index}`} 
+            fill={entry.color || COLORS[index % COLORS.length]} 
+          />
         ))}
       </Pie>
-      <Tooltip />
+      <Tooltip content={({ active, payload }) => {
+        if (active && payload && payload.length) {
+          return (
+            <div className="bg-white p-2 border border-gray-200 rounded shadow">
+              <p className="text-sm">{`${payload[0].name}: ${payload[0].value}`}</p>
+            </div>
+          );
+        }
+        return null;
+      }} />
     </RechartsPieChart>
   </ResponsiveContainer>
 );
