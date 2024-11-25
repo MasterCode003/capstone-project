@@ -21,6 +21,7 @@ const StaffRecords: React.FC = () => {
   const [isRejectionSuccessModalOpen, setIsRejectionSuccessModalOpen] = useState(false);
   const [isConfirmDoubleBlindModalOpen, setIsConfirmDoubleBlindModalOpen] = useState(false);
   const [isRevisionModalOpen, setIsRevisionModalOpen] = useState(false);
+  const [isStatusViewModalOpen, setIsStatusViewModalOpen] = useState(false);
   const [selectedManuscript, setSelectedManuscript] = useState<ManuscriptDetails | null>(null);
   const [rejectionReason, setRejectionReason] = useState('');
   const [rejectionComment, setRejectionComment] = useState('');
@@ -84,6 +85,11 @@ const StaffRecords: React.FC = () => {
     setIsModalOpen(true);
   };
 
+  const handleViewStatusClick = (manuscript: ManuscriptDetails) => {
+    setSelectedManuscript(manuscript);
+    setIsStatusViewModalOpen(true);
+  };
+
   const handleReviseClick = () => {
     setIsRevisionModalOpen(true);
     setIsModalOpen(false);
@@ -93,7 +99,7 @@ const StaffRecords: React.FC = () => {
     if (selectedManuscript && selectedStatus) {
       const updatedDetails: Partial<ManuscriptDetails> = {
         ...selectedManuscript,
-        revisionStatus: selectedStatus
+        revisionComments: selectedStatus
       };
       
       updateManuscriptStatus(
@@ -200,6 +206,7 @@ const StaffRecords: React.FC = () => {
     setIsRejectionSuccessModalOpen(false);
     setIsConfirmDoubleBlindModalOpen(false);
     setIsRevisionModalOpen(false);
+    setIsStatusViewModalOpen(false);
     setSelectedManuscript(null);
     setSelectedReviewers(['', '', '']);
     setRejectionReason('');
@@ -217,7 +224,7 @@ const StaffRecords: React.FC = () => {
 
   return (
     <div className="bg-white p-6 rounded-lg shadow-md">
-      <h3 className="text-xl font-semibold mb-4">Pre-Review Records</h3>
+      <h3 className="text-xl font-semibold mb-4">PreReview Records</h3>
       <SearchBar searchTerm={searchTerm} onSearchChange={setSearchTerm} />
       <div className="overflow-x-auto">
         <table className="min-w-full bg-white">
@@ -246,24 +253,36 @@ const StaffRecords: React.FC = () => {
                 <td className="py-4 px-4">{record.authors}</td>
                 <td className="py-4 px-4">{record.affiliation}</td>
                 <td className="py-4 px-4">
-                  <span
-                    className={`px-2 py-1 rounded-full text-sm ${
-                      record.revisionStatus
-                        ? 'bg-blue-100 text-blue-800'
-                        : 'bg-gray-100 text-gray-800'
-                    }`}
-                  >
-                    {record.revisionStatus || 'Pending Review'}
-                  </span>
+                  <div className="flex flex-col space-y-2">
+                    <span
+                      className={`px-2 py-1 rounded-full text-sm ${
+                        record.revisionStatus
+                          ? 'bg-blue-100 text-blue-800'
+                          : 'bg-blue-100 text-blue-800'
+                      }`}
+                    >
+                      {record.revisionStatus || 'In Progress'}
+                    </span>
+                    {record.revisionComments && (
+                      <button
+                        onClick={() => handleViewStatusClick(record)}
+                        className="bg-blue-100 text-blue-700 px-2 py-1 rounded text-xs hover:bg-blue-200 transition-colors w-fit"
+                      >
+                        View Status
+                      </button>
+                    )}
+                  </div>
                 </td>
                 <td className="py-4 px-4">
-                  <button
-                    onClick={() => handleViewDetails(record)}
-                    className="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600 transition-colors inline-flex items-center"
-                  >
-                    <Eye size={16} className="mr-1" />
-                    View
-                  </button>
+                  <div className="flex space-x-2">
+                    <button
+                      onClick={() => handleViewDetails(record)}
+                      className="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600 transition-colors inline-flex items-center"
+                    >
+                      <Eye size={16} className="mr-1" />
+                      View
+                    </button>
+                  </div>
                 </td>
               </tr>
             ))}
@@ -319,9 +338,9 @@ const StaffRecords: React.FC = () => {
                 </p>
               </div>
               <div>
-                <label className="font-semibold block">Assistant Editor:</label>
+                <label className="font-semibold block">Editor:</label>
                 <p className="text-gray-700">
-                  {selectedManuscript.assistantEditor}
+                  {selectedManuscript.editor || selectedManuscript.assistantEditor}
                 </p>
               </div>
               {selectedManuscript.revisionStatus && (
@@ -338,17 +357,16 @@ const StaffRecords: React.FC = () => {
             {selectedManuscript.status === 'pre-review' && (
               <div className="mt-6 flex justify-end space-x-4">
                 <button
+                  onClick={() => handleReviseClick()}
+                  className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition-colors"
+                >
+                  Revise
+                </button>
+                <button
                   onClick={() => openRejectModal(selectedManuscript)}
                   className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 transition-colors"
                 >
                   Reject Manuscript
-                </button>
-                <button
-                  onClick={handleReviseClick}
-                  className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition-colors inline-flex items-center"
-                >
-                  <FileEdit size={16} className="mr-1" />
-                  Revise
                 </button>
                 <button
                   onClick={handleProceedToDoubleBlind}
@@ -362,12 +380,12 @@ const StaffRecords: React.FC = () => {
         </div>
       )}
 
-      {/* Revision Modal */}
+      {/* Revision Modal (Comments) */}
       {isRevisionModalOpen && selectedManuscript && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white p-6 rounded-lg w-[500px]">
             <div className="flex justify-between items-center mb-4">
-              <h3 className="text-xl font-semibold">Update Revision Status</h3>
+              <h3 className="text-xl font-semibold">Add Comments</h3>
               <button
                 onClick={() => setIsRevisionModalOpen(false)}
                 className="text-gray-500 hover:text-gray-700"
@@ -382,21 +400,15 @@ const StaffRecords: React.FC = () => {
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Revision Status
+                  Comments
                 </label>
-                <select
+                <textarea
                   value={selectedStatus}
                   onChange={(e) => setSelectedStatus(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[150px]"
+                  placeholder="Enter your comments here..."
                   required
-                >
-                  <option value="">Select Status</option>
-                  {revisionOptions.map((option) => (
-                    <option key={option} value={option}>
-                      {option}
-                    </option>
-                  ))}
-                </select>
+                />
               </div>
             </div>
             <div className="mt-6 flex justify-end space-x-4">
@@ -411,7 +423,7 @@ const StaffRecords: React.FC = () => {
                 className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
                 disabled={!selectedStatus}
               >
-                Update Status
+                Save Comments
               </button>
             </div>
           </div>
@@ -475,7 +487,7 @@ const StaffRecords: React.FC = () => {
       {isConfirmDoubleBlindModalOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-lg p-6 max-w-md w-full">
-            <h2 className="text-xl font-semibold mb-4">Confirm Double Blind Review</h2>
+            <h3 className="text-xl font-semibold mb-4">Confirm Double Blind Review</h3>
             <p className="mb-6">Are you sure you want to proceed with the selected reviewers for double blind review?</p>
             <div className="flex justify-end space-x-4">
               <button
@@ -605,6 +617,39 @@ const StaffRecords: React.FC = () => {
               >
                 Close
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Status View Modal */}
+      {isStatusViewModalOpen && selectedManuscript && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-lg w-[500px]">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-xl font-semibold">Manuscript Status</h3>
+              <button
+                onClick={() => setIsStatusViewModalOpen(false)}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                <X size={24} />
+              </button>
+            </div>
+            <div className="space-y-4">
+              <div>
+                <label className="font-semibold block">Title:</label>
+                <p className="text-gray-700">{selectedManuscript.title}</p>
+              </div>
+              <div>
+                <label className="font-semibold block">Current Status:</label>
+                <p className="text-gray-700">{selectedManuscript.revisionStatus || 'In Progress'}</p>
+              </div>
+              {selectedManuscript.revisionComments && (
+                <div>
+                  <label className="font-semibold block">Comments:</label>
+                  <p className="text-gray-700 whitespace-pre-wrap">{selectedManuscript.revisionComments}</p>
+                </div>
+              )}
             </div>
           </div>
         </div>

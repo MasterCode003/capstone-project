@@ -14,9 +14,8 @@ const StaffLayouting: React.FC = () => {
   const [dateFinished, setDateFinished] = useState('');
   const [proofreader, setProofreader] = useState('');
   const [proofreaderEmail, setProofreaderEmail] = useState('');
-  const [layoutArtistEmail, setLayoutArtistEmail] = useState('');
   const [revisionComments, setRevisionComments] = useState('');
-  const [issue, setIssue] = useState('');
+  const [issue, setIssue] = useState('1');  // Default to '1'
   const [volumeNumber, setVolumeNumber] = useState('');
   const [year, setYear] = useState('');
   const [missingFields, setMissingFields] = useState<string[]>([]);
@@ -36,33 +35,52 @@ const StaffLayouting: React.FC = () => {
     setDateFinished(new Date().toISOString().split('T')[0]);
     setProofreader('');
     setProofreaderEmail('');
-    setLayoutArtistEmail('');
     setIsModalOpen(true);
   };
 
   const handleRevise = () => {
     if (selectedRecord && revisionComments) {
-      const updatedLayoutDetails: LayoutDetails = {
+      // Create a new layout details object that preserves all existing information
+      const updatedLayoutDetails = {
         ...selectedRecord.layoutDetails!,
         status: 'revised',
         revisionComments,
-        layoutArtist: selectedRecord.layoutDetails!.layoutArtist,
-        layoutArtistEmail: selectedRecord.layoutDetails!.layoutArtistEmail
+        // Explicitly preserve layout artist information
+        layoutArtist: selectedRecord.layoutDetails!.layoutArtist || '',
+        layoutArtistEmail: selectedRecord.layoutDetails!.layoutArtistEmail || '',
+        dateAccepted: selectedRecord.layoutDetails!.dateAccepted,
+        dateFinished: selectedRecord.layoutDetails!.dateFinished
       };
 
-      updateLayoutDetails(selectedRecord.id, {
+      // Create the complete updated record
+      const updatedRecord = {
+        ...selectedRecord,
         layoutDetails: updatedLayoutDetails,
-        revisionComments,
-        firstRevisionDate: selectedRecord.firstRevisionDate || new Date().toISOString().split('T')[0]
-      });
+        revisionComments
+      };
 
-      setIsReviseModalOpen(false);
+      // Update the record in the context
+      updateLayoutDetails(selectedRecord.id, updatedRecord);
+      
+      // Update local state to maintain all information
+      setSelectedRecord({
+        ...updatedRecord,
+        layoutDetails: {
+          ...updatedRecord.layoutDetails,
+          layoutArtist: selectedRecord.layoutDetails!.layoutArtist,
+          layoutArtistEmail: selectedRecord.layoutDetails!.layoutArtistEmail
+        }
+      });
+      
+      // Only reset revision-specific fields
       setRevisionComments('');
+      setIsReviseModalOpen(false);
     }
   };
 
   const handleProceedToFPR = () => {
-    if (selectedRecord && dateFinished && proofreader && proofreaderEmail && layoutArtistEmail) {
+    if (selectedRecord && dateFinished && proofreader && proofreaderEmail && issue && volumeNumber && year) {
+      // Preserve all the existing layout details
       const updatedManuscript = {
         ...selectedRecord,
         proofreadingDetails: {
@@ -74,17 +92,25 @@ const StaffLayouting: React.FC = () => {
           revisionComments: selectedRecord.layoutDetails?.revisionComments
         },
         layoutDetails: {
-          ...selectedRecord.layoutDetails,
-          layoutArtistEmail,
-          dateFinished
+          ...selectedRecord.layoutDetails!,
+          dateFinished,
+          layoutArtist: selectedRecord.layoutDetails!.layoutArtist,
+          layoutArtistEmail: selectedRecord.layoutDetails!.layoutArtistEmail
         }
       };
+
+      // Update the manuscript status
       updateManuscriptStatus(selectedRecord.id, 'final-proofreading', updatedManuscript);
+      
+      // Reset form fields
       setIsModalOpen(false);
       setDateFinished('');
       setProofreader('');
       setProofreaderEmail('');
-      setLayoutArtistEmail('');
+      setIssue('1');
+      setVolumeNumber('');
+      setYear('');
+      setMissingFields([]);
     }
   };
 
@@ -93,7 +119,6 @@ const StaffLayouting: React.FC = () => {
     if (!dateFinished) missing.push('Date Finished');
     if (!proofreader) missing.push('Proofreader Name');
     if (!proofreaderEmail) missing.push('Proofreader Email');
-    if (!layoutArtistEmail) missing.push('Layout Artist Email');
     if (!issue) missing.push('Issue');
     if (!volumeNumber) missing.push('Volume Number');
     if (!year) missing.push('Year');
@@ -113,7 +138,6 @@ const StaffLayouting: React.FC = () => {
     if (!dateFinished) missing.push('Date Finished');
     if (!proofreader) missing.push('Proofreader Name');
     if (!proofreaderEmail) missing.push('Proofreader Email');
-    if (!layoutArtistEmail) missing.push('Layout Artist Email');
     if (!issue) missing.push('Issue');
     if (!volumeNumber) missing.push('Volume Number');
     if (!year) missing.push('Year');
@@ -151,7 +175,12 @@ const StaffLayouting: React.FC = () => {
                 <td className="py-4 px-4">{record.title}</td>
                 <td className="py-4 px-4">{record.authors}</td>
                 <td className="py-4 px-4">{record.layoutDetails?.dateAccepted}</td>
-                <td className="py-4 px-4">{record.layoutDetails?.layoutArtist}</td>
+                <td className="py-4 px-4">
+                  <div>
+                    <p>{record.layoutDetails?.layoutArtist}</p>
+                    <p className="text-sm text-gray-500">{record.layoutDetails?.layoutArtistEmail}</p>
+                  </div>
+                </td>
                 <td className="py-4 px-4">
                   <span className={`px-2 py-1 rounded-full text-xs ${
                     record.layoutDetails?.status === 'completed'
@@ -226,6 +255,10 @@ const StaffLayouting: React.FC = () => {
                 <label className="font-semibold block">Layout Artist:</label>
                 <p className="text-gray-700">{selectedRecord.layoutDetails?.layoutArtist}</p>
               </div>
+              <div>
+                <label className="font-semibold block">Layout Artist Email:</label>
+                <p className="text-gray-700">{selectedRecord.layoutDetails?.layoutArtistEmail}</p>
+              </div>
             </div>
 
             {/* Middle section - Status and Dates */}
@@ -283,19 +316,6 @@ const StaffLayouting: React.FC = () => {
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Layout Artist Email
-                    </label>
-                    <input
-                      type="email"
-                      value={layoutArtistEmail}
-                      onChange={(e) => setLayoutArtistEmail(e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      placeholder="Enter layout artist email"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
                       Proofreader Name
                     </label>
                     <input
@@ -311,14 +331,16 @@ const StaffLayouting: React.FC = () => {
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       Issue
                     </label>
-                    <input
-                      type="text"
+                    <select
                       value={issue}
                       onChange={(e) => setIssue(e.target.value)}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      placeholder="Enter issue number"
                       required
-                    />
+                    >
+                      <option value="1">Issue 1</option>
+                      <option value="2">Issue 2</option>
+                      <option value="Special Issue">Special Issue</option>
+                    </select>
                   </div>
                 </div>
 
@@ -405,15 +427,33 @@ const StaffLayouting: React.FC = () => {
           <div className="bg-white p-6 rounded-lg w-[500px]">
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-xl font-semibold">Revise Layout</h3>
-              <button onClick={() => setIsReviseModalOpen(false)} className="text-gray-500 hover:text-gray-700">
+              <button
+                onClick={() => setIsReviseModalOpen(false)}
+                className="text-gray-500 hover:text-gray-700"
+              >
                 <X size={24} />
               </button>
             </div>
-            <div className="mb-4">
-              <h4 className="text-lg font-semibold mb-2">Manuscript Title:</h4>
-              <p className="text-gray-700">{selectedRecord.title}</p>
+            {/* Layout Artist Information Section - Always visible */}
+            <div className="mb-6 p-4 bg-gray-50 rounded-md">
+              <h4 className="text-md font-semibold mb-3">Layout Information</h4>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-600">Layout Artist:</label>
+                  <p className="text-gray-800">{selectedRecord.layoutDetails?.layoutArtist}</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-600">Email:</label>
+                  <p className="text-gray-800">{selectedRecord.layoutDetails?.layoutArtistEmail}</p>
+                </div>
+              </div>
             </div>
+            {/* Revision Section */}
             <div className="space-y-4">
+              <div>
+                <h4 className="text-md font-semibold mb-2">Manuscript Title:</h4>
+                <p className="text-gray-700">{selectedRecord.title}</p>
+              </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Revision Comments
