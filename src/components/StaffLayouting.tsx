@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Eye, X } from 'lucide-react';
 import { useRecords } from '../contexts/RecordContext';
 import SearchBar from './SearchBar';
@@ -15,9 +15,6 @@ const StaffLayouting: React.FC = () => {
   const [proofreader, setProofreader] = useState('');
   const [proofreaderEmail, setProofreaderEmail] = useState('');
   const [revisionComments, setRevisionComments] = useState('');
-  const [issue, setIssue] = useState('1');  // Default to '1'
-  const [volumeNumber, setVolumeNumber] = useState('');
-  const [year, setYear] = useState('');
   const [missingFields, setMissingFields] = useState<string[]>([]);
 
   // Filter only records that have layout details
@@ -40,46 +37,56 @@ const StaffLayouting: React.FC = () => {
 
   const handleRevise = () => {
     if (selectedRecord && revisionComments) {
-      // Create a new layout details object that preserves all existing information
+      // Get the current record from acceptedRecords
+      const currentRecord = acceptedRecords.find(record => record.id === selectedRecord.id);
+      if (!currentRecord) return;
+
+      // Create updated layout details while preserving ALL layout information
       const updatedLayoutDetails = {
-        ...selectedRecord.layoutDetails!,
+        ...currentRecord.layoutDetails,
         status: 'revised',
         revisionComments,
-        // Explicitly preserve layout artist information
-        layoutArtist: selectedRecord.layoutDetails!.layoutArtist || '',
-        layoutArtistEmail: selectedRecord.layoutDetails!.layoutArtistEmail || '',
-        dateAccepted: selectedRecord.layoutDetails!.dateAccepted,
-        dateFinished: selectedRecord.layoutDetails!.dateFinished
+        layoutArtist: currentRecord.layoutDetails?.layoutArtist || '',
+        layoutArtistEmail: currentRecord.layoutDetails?.layoutArtistEmail || '',
+        dateAccepted: currentRecord.layoutDetails?.dateAccepted || '',
+        dateFinished: currentRecord.layoutDetails?.dateFinished || ''
       };
 
-      // Create the complete updated record
+      // Create complete updated record
       const updatedRecord = {
-        ...selectedRecord,
+        ...currentRecord,
         layoutDetails: updatedLayoutDetails,
-        revisionComments
+        revisionComments,
+        firstRevisionDate: currentRecord.firstRevisionDate || new Date().toISOString().split('T')[0]
       };
 
-      // Update the record in the context
+      // Update the record in context
       updateLayoutDetails(selectedRecord.id, updatedRecord);
       
-      // Update local state to maintain all information
-      setSelectedRecord({
-        ...updatedRecord,
-        layoutDetails: {
-          ...updatedRecord.layoutDetails,
-          layoutArtist: selectedRecord.layoutDetails!.layoutArtist,
-          layoutArtistEmail: selectedRecord.layoutDetails!.layoutArtistEmail
-        }
-      });
-      
-      // Only reset revision-specific fields
+      // Close the modal and reset only the revision comments
       setRevisionComments('');
       setIsReviseModalOpen(false);
     }
   };
 
+  useEffect(() => {
+    if (selectedRecord?.layoutDetails) {
+      const { layoutArtist, layoutArtistEmail } = selectedRecord.layoutDetails;
+      if (layoutArtist && layoutArtistEmail) {
+        setSelectedRecord(prevRecord => ({
+          ...prevRecord,
+          layoutDetails: {
+            ...prevRecord?.layoutDetails,
+            layoutArtist,
+            layoutArtistEmail
+          }
+        }));
+      }
+    }
+  }, [selectedRecord?.id]);
+
   const handleProceedToFPR = () => {
-    if (selectedRecord && dateFinished && proofreader && proofreaderEmail && issue && volumeNumber && year) {
+    if (selectedRecord && dateFinished && proofreader && proofreaderEmail) {
       // Preserve all the existing layout details
       const updatedManuscript = {
         ...selectedRecord,
@@ -107,9 +114,6 @@ const StaffLayouting: React.FC = () => {
       setDateFinished('');
       setProofreader('');
       setProofreaderEmail('');
-      setIssue('1');
-      setVolumeNumber('');
-      setYear('');
       setMissingFields([]);
     }
   };
@@ -119,9 +123,6 @@ const StaffLayouting: React.FC = () => {
     if (!dateFinished) missing.push('Date Finished');
     if (!proofreader) missing.push('Proofreader Name');
     if (!proofreaderEmail) missing.push('Proofreader Email');
-    if (!issue) missing.push('Issue');
-    if (!volumeNumber) missing.push('Volume Number');
-    if (!year) missing.push('Year');
 
     if (missing.length > 0) {
       setMissingFields(missing);
@@ -138,9 +139,6 @@ const StaffLayouting: React.FC = () => {
     if (!dateFinished) missing.push('Date Finished');
     if (!proofreader) missing.push('Proofreader Name');
     if (!proofreaderEmail) missing.push('Proofreader Email');
-    if (!issue) missing.push('Issue');
-    if (!volumeNumber) missing.push('Volume Number');
-    if (!year) missing.push('Year');
     setMissingFields(missing);
     return missing.length === 0;
   };
@@ -327,21 +325,6 @@ const StaffLayouting: React.FC = () => {
                       required
                     />
                   </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Issue
-                    </label>
-                    <select
-                      value={issue}
-                      onChange={(e) => setIssue(e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      required
-                    >
-                      <option value="1">Issue 1</option>
-                      <option value="2">Issue 2</option>
-                      <option value="Special Issue">Special Issue</option>
-                    </select>
-                  </div>
                 </div>
 
                 {/* Right Column */}
@@ -359,32 +342,6 @@ const StaffLayouting: React.FC = () => {
                       required
                     />
                   </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Volume Number
-                    </label>
-                    <input
-                      type="text"
-                      value={volumeNumber}
-                      onChange={(e) => setVolumeNumber(e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      placeholder="Enter volume number"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Year
-                    </label>
-                    <input
-                      type="text"
-                      value={year}
-                      onChange={(e) => setYear(e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      placeholder="Enter year"
-                      required
-                    />
-                  </div>
                 </div>
               </div>
             </div>
@@ -399,16 +356,6 @@ const StaffLayouting: React.FC = () => {
                 className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
               >
                 Close
-              </button>
-              <button
-                onClick={() => {
-                  setIsModalOpen(false);
-                  setIsReviseModalOpen(true);
-                  setMissingFields([]);
-                }}
-                className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
-              >
-                Revise
               </button>
               <button
                 onClick={handleProceedToFPRClick}

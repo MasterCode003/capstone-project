@@ -26,12 +26,9 @@ const StaffRecords: React.FC = () => {
   const [rejectionReason, setRejectionReason] = useState('');
   const [rejectionComment, setRejectionComment] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedReviewers, setSelectedReviewers] = useState<string[]>([
-    '',
-    '',
-    '',
-  ]);
+  const [selectedReviewers, setSelectedReviewers] = useState<string[]>(['', '', '', '']);
   const [selectedStatus, setSelectedStatus] = useState('');
+  const [showWarning, setShowWarning] = useState(false);
 
   const revisionOptions = [
     'In Progress',
@@ -120,19 +117,24 @@ const StaffRecords: React.FC = () => {
   };
 
   const handleReviewerSelectionComplete = () => {
-    if (selectedReviewers.every((reviewer) => reviewer)) {
+    const filledReviewers = selectedReviewers.filter(reviewer => reviewer !== '');
+    if (filledReviewers.length < 2) {
+      setShowWarning(true);
+    } else {
+      setShowWarning(false);
       setIsConfirmDoubleBlindModalOpen(true);
       setIsReviewerModalOpen(false);
-    } else {
-      alert('Please select all three reviewers');
     }
   };
 
   const handleConfirmDoubleBlind = () => {
-    if (selectedManuscript && selectedReviewers.every((reviewer) => reviewer)) {
+    if (selectedManuscript) {
+      // Filter out empty reviewer selections
+      const finalReviewers = selectedReviewers.filter(reviewer => reviewer !== '');
+      
       const updatedDetails: Partial<ManuscriptDetails> = {
         ...selectedManuscript,
-        reviewers: selectedReviewers
+        reviewers: finalReviewers
       };
 
       updateManuscriptStatus(
@@ -198,6 +200,11 @@ const StaffRecords: React.FC = () => {
     );
   };
 
+  const getSelectedReviewerDetails = (reviewerId: string) => {
+    if (!reviewerId) return null;
+    return reviewers.find(reviewer => reviewer.id.toString() === reviewerId);
+  };
+
   const resetAllModals = () => {
     setIsModalOpen(false);
     setIsRejectModalOpen(false);
@@ -208,10 +215,11 @@ const StaffRecords: React.FC = () => {
     setIsRevisionModalOpen(false);
     setIsStatusViewModalOpen(false);
     setSelectedManuscript(null);
-    setSelectedReviewers(['', '', '']);
+    setSelectedReviewers(['', '', '', '']);
     setRejectionReason('');
     setRejectionComment('');
     setSelectedStatus('');
+    setShowWarning(false);
   };
 
   const handleSuccessModalClose = () => {
@@ -508,75 +516,117 @@ const StaffRecords: React.FC = () => {
       )}
 
       {/* Reviewer Selection Modal */}
-      {isReviewerModalOpen && selectedManuscript && (
+      {isReviewerModalOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded-lg w-[600px]">
+          <div className="bg-white p-6 rounded-lg w-[600px] max-h-[80vh] overflow-y-auto">
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-xl font-semibold">Select Reviewers</h3>
               <button
-                onClick={() => {
-                  setIsReviewerModalOpen(false);
-                  setIsModalOpen(true);
-                  setSelectedReviewers(['', '', '']);
-                }}
+                onClick={() => setIsReviewerModalOpen(false)}
                 className="text-gray-500 hover:text-gray-700"
               >
                 <X size={24} />
               </button>
             </div>
-            <div className="space-y-4">
-              {[0, 1, 2].map((index) => (
-                <div key={index}>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Reviewer {index + 1}
-                  </label>
-                  <select
-                    value={selectedReviewers[index]}
-                    onChange={(e) => handleReviewerChange(index, e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="">Select a reviewer</option>
-                    {getAvailableReviewers(index).map((reviewer) => (
-                      <option key={reviewer.id} value={reviewer.id.toString()}>
-                        {`${reviewer.firstName} ${reviewer.middleName} ${reviewer.lastName} - ${reviewer.fieldOfExpertise}`}
-                      </option>
-                    ))}
-                  </select>
-                  {selectedReviewers[index] && (
-                    <div className="mt-2 p-3 bg-gray-50 rounded-md">
-                      {(() => {
-                        const reviewer = reviewers.find(r => r.id.toString() === selectedReviewers[index]);
-                        return reviewer ? (
-                          <>
-                            <p className="text-sm text-gray-600">Affiliation: {reviewer.affiliation}</p>
-                            <p className="text-sm text-gray-600">Email: {reviewer.email}</p>
-                            <p className="text-sm text-gray-600">Expertise: {reviewer.fieldOfExpertise}</p>
-                          </>
-                        ) : null;
-                      })()}
-                    </div>
-                  )}
+            <div className="space-y-6">
+              {/* All Reviewers */}
+              <div>
+                {[0, 1, 2, 3].map((index) => (
+                  <div key={index} className="mb-6">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Reviewer {index + 1} {index < 2 ? "(Required)" : "(Optional)"}
+                    </label>
+                    <select
+                      value={selectedReviewers[index]}
+                      onChange={(e) => handleReviewerChange(index, e.target.value)}
+                      className={`w-full p-2 border rounded focus:ring-2 ${
+                        index < 2 
+                          ? "focus:ring-blue-500 border-blue-200" 
+                          : "focus:ring-gray-500 border-gray-200"
+                      }`}
+                      required={index < 2}
+                    >
+                      <option value="">Select a reviewer</option>
+                      {getAvailableReviewers(index).map((reviewer) => (
+                        <option key={reviewer.id} value={reviewer.id.toString()}>
+                          {`${reviewer.firstName} ${reviewer.lastName}${reviewer.fieldOfReview ? ` - ${reviewer.fieldOfReview}` : ''}`}
+                        </option>
+                      ))}
+                    </select>
+                    
+                    {/* Reviewer Details */}
+                    {selectedReviewers[index] && (
+                      <div className="mt-2 p-3 bg-gray-50 rounded-md border border-gray-200">
+                        {(() => {
+                          const reviewer = getSelectedReviewerDetails(selectedReviewers[index]);
+                          if (!reviewer) return null;
+                          return (
+                            <div className="text-sm">
+                              <div className="grid grid-cols-1 gap-2">
+                                <div>
+                                  <span className="font-medium">Name:</span>
+                                  <span className="ml-2">
+                                    {`${reviewer.firstName} ${reviewer.middleName ? reviewer.middleName + ' ' : ''}${reviewer.lastName}`}
+                                  </span>
+                                </div>
+                                {reviewer.fieldOfReview && (
+                                  <div>
+                                    <span className="font-medium">Field of Expertise:</span>
+                                    <span className="ml-2">{reviewer.fieldOfExpertise}</span>
+                                  </div>
+                                )}
+                                <div>
+                                  <span className="font-medium">Email:</span>
+                                  <span className="ml-2">{reviewer.email}</span>
+                                </div>
+                                {reviewer.affiliation && (
+                                  <div>
+                                    <span className="font-medium">Affiliation:</span>
+                                    <span className="ml-2">{reviewer.affiliation}</span>
+                                  </div>
+                                )}
+                                {reviewer.publicationsLink && (
+                                  <div>
+                                    <a
+                                      href={reviewer.publicationsLink}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="text-blue-500 hover:text-blue-600 flex items-center"
+                                    >
+                                      View Publications
+                                    </a>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })()}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+
+              {showWarning && (
+                <div className="text-red-500 text-sm">
+                  Please select at least 2 required reviewers to proceed.
                 </div>
-              ))}
-            </div>
-            <div className="mt-6 flex justify-end space-x-4">
-              <button
-                onClick={() => {
-                  setIsReviewerModalOpen(false);
-                  setIsModalOpen(true);
-                  setSelectedReviewers(['', '', '']);
-                }}
-                className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleReviewerSelectionComplete}
-                className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition-colors"
-                disabled={!selectedReviewers.every((reviewer) => reviewer)}
-              >
-                Proceed
-              </button>
+              )}
+
+              <div className="flex justify-end space-x-4">
+                <button
+                  onClick={() => setIsReviewerModalOpen(false)}
+                  className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleReviewerSelectionComplete}
+                  className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+                >
+                  Proceed
+                </button>
+              </div>
             </div>
           </div>
         </div>

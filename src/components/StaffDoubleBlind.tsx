@@ -67,7 +67,8 @@ const StaffDoubleBlind: React.FC = () => {
           layoutDetails: {
             layoutArtist,
             layoutArtistEmail,
-            status: 'pending' as const
+            status: 'pending' as const,
+            dateAccepted: new Date().toISOString().split('T')[0]
           }
         };
         updateManuscriptStatus(selectedManuscript.id, 'accepted', acceptedManuscript);
